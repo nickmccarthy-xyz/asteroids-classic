@@ -8,10 +8,20 @@ const helpEl = document.getElementById("help");
 const overlayEl = document.getElementById("overlay");
 const overlayTitleEl = document.getElementById("overlay-title");
 const overlayTextEl = document.getElementById("overlay-text");
+const gameShellEl = document.getElementById("game-shell");
+const startBtnEl = document.getElementById("start-btn");
+const restartBtnEl = document.getElementById("restart-btn");
+const leftBtnEl = document.getElementById("btn-left");
+const rightBtnEl = document.getElementById("btn-right");
+const thrustBtnEl = document.getElementById("btn-thrust");
+const shootBtnEl = document.getElementById("btn-shoot");
+const autoFireBtnEl = document.getElementById("btn-autofire");
+const BASE_WIDTH = Number(canvas.getAttribute("width")) || 960;
+const BASE_HEIGHT = Number(canvas.getAttribute("height")) || 640;
 
 const GAME = {
-  width: canvas.width,
-  height: canvas.height,
+  width: BASE_WIDTH,
+  height: BASE_HEIGHT,
   maxBullets: 6,
   bulletLife: 1.1,
   bulletSpeed: 620,
@@ -39,6 +49,11 @@ let gameStarted = false;
 let gameOver = false;
 let shootTimer = 0;
 let lastTs = 0;
+let autoFireEnabled = false;
+let shootHeld = false;
+let renderScaleX = 1;
+let renderScaleY = 1;
+let resizeRaf = 0;
 
 function rand(min, max) {
   return Math.random() * (max - min) + min;
@@ -316,12 +331,50 @@ function drawStars() {
   }
 }
 
+function getRenderScaleTarget() {
+  const dpr = window.devicePixelRatio || 1;
+  const hasTouch = window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+  let maxScale = hasTouch ? 1.35 : 2;
+  if (hasTouch && Math.min(window.innerWidth, window.innerHeight) < 430) {
+    maxScale = 1.1;
+  }
+  return Math.min(dpr, maxScale);
+}
+
+function syncCanvasResolution() {
+  const rect = canvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+
+  const renderScale = getRenderScaleTarget();
+  const targetWidth = Math.max(240, Math.round(rect.width * renderScale));
+  const targetHeight = Math.max(160, Math.round(rect.height * renderScale));
+
+  if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+  }
+
+  renderScaleX = canvas.width / GAME.width;
+  renderScaleY = canvas.height / GAME.height;
+  ctx.imageSmoothingEnabled = false;
+}
+
+function scheduleCanvasSync() {
+  if (resizeRaf) return;
+  resizeRaf = requestAnimationFrame(() => {
+    resizeRaf = 0;
+    syncCanvasResolution();
+  });
+}
+
 function render() {
+  ctx.setTransform(renderScaleX, 0, 0, renderScaleY, 0, 0);
   ctx.clearRect(0, 0, GAME.width, GAME.height);
   drawStars();
   drawAsteroids();
   drawBullets();
   if (gameStarted) drawShip();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
 
 function frame(ts) {
@@ -340,11 +393,114 @@ function startNewRun() {
   resetGame();
 }
 
+function setControlState(key, isPressed, btnEl) {
+  keys[key] = isPressed;
+  if (!btnEl) return;
+  btnEl.classList.toggle("active", isPressed);
+}
+
+function updateShootState() {
+  const isShooting = autoFireEnabled || shootHeld;
+  keys.shoot = isShooting;
+  if (shootBtnEl) shootBtnEl.classList.toggle("active", isShooting);
+}
+
+function setAutoFire(isEnabled) {
+  autoFireEnabled = isEnabled;
+  if (autoFireBtnEl) autoFireBtnEl.classList.toggle("active", autoFireEnabled);
+  updateShootState();
+}
+
+function bindHoldControl(btnEl, key) {
+  if (!btnEl) return;
+
+  const onDown = (e) => {
+    setControlState(key, true, btnEl);
+    if (e.pointerId !== undefined) btnEl.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  };
+
+  const onUp = (e) => {
+    setControlState(key, false, btnEl);
+    e.preventDefault();
+  };
+
+  btnEl.addEventListener("pointerdown", onDown);
+  btnEl.addEventListener("pointerup", onUp);
+  btnEl.addEventListener("pointercancel", onUp);
+  btnEl.addEventListener("lostpointercapture", onUp);
+  btnEl.addEventListener("contextmenu", (e) => e.preventDefault());
+}
+
+function bindShootControl(btnEl) {
+  if (!btnEl) return;
+
+  const onDown = (e) => {
+    shootHeld = true;
+    if (e.pointerId !== undefined) btnEl.setPointerCapture(e.pointerId);
+    updateShootState();
+    e.preventDefault();
+  };
+
+  const onUp = (e) => {
+    shootHeld = false;
+    updateShootState();
+    e.preventDefault();
+  };
+
+  btnEl.addEventListener("pointerdown", onDown);
+  btnEl.addEventListener("pointerup", onUp);
+  btnEl.addEventListener("pointercancel", onUp);
+  btnEl.addEventListener("lostpointercapture", onUp);
+  btnEl.addEventListener("contextmenu", (e) => e.preventDefault());
+}
+
+function enableTouchUiIfAvailable() {
+  if (window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0) {
+    gameShellEl.classList.add("show-touch");
+  }
+}
+
+enableTouchUiIfAvailable();
+window.addEventListener("resize", scheduleCanvasSync, { passive: true });
+window.addEventListener("orientationchange", scheduleCanvasSync, { passive: true });
+bindHoldControl(leftBtnEl, "left");
+bindHoldControl(rightBtnEl, "right");
+bindHoldControl(thrustBtnEl, "thrust");
+bindShootControl(shootBtnEl);
+
+if (autoFireBtnEl) {
+  autoFireBtnEl.addEventListener("click", () => {
+    setAutoFire(!autoFireEnabled);
+  });
+}
+
+if (startBtnEl) {
+  startBtnEl.addEventListener("click", () => {
+    if (!gameStarted || gameOver) startNewRun();
+  });
+}
+
+if (restartBtnEl) {
+  restartBtnEl.addEventListener("click", () => {
+    if (!gameStarted || gameOver) startNewRun();
+  });
+}
+
 window.addEventListener("keydown", (e) => {
   const k = e.key.toLowerCase();
-  if (k === "arrowleft" || k === "a") keys.left = true;
-  if (k === "arrowright" || k === "d") keys.right = true;
-  if (k === "arrowup" || k === "w") keys.thrust = true;
+  if (k === "arrowleft" || k === "a") {
+    keys.left = true;
+    e.preventDefault();
+  }
+  if (k === "arrowright" || k === "d") {
+    keys.right = true;
+    e.preventDefault();
+  }
+  if (k === "arrowup" || k === "w") {
+    keys.thrust = true;
+    e.preventDefault();
+  }
   if (k === " ") {
     keys.shoot = true;
     e.preventDefault();
@@ -360,8 +516,11 @@ window.addEventListener("keyup", (e) => {
   if (k === "arrowleft" || k === "a") keys.left = false;
   if (k === "arrowright" || k === "d") keys.right = false;
   if (k === "arrowup" || k === "w") keys.thrust = false;
-  if (k === " ") keys.shoot = false;
+  if (k === " ") {
+    keys.shoot = autoFireEnabled || shootHeld;
+  }
 });
 
+syncCanvasResolution();
 resetGame();
 requestAnimationFrame(frame);

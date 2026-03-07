@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="game-shell">
+    <main class="game-shell" id="game-shell">
       <header class="hud">
         <div><span class="label">Score</span> <span id="score">0</span></div>
         <div><span class="label">Lives</span> <span id="lives">3</span></div>
@@ -21,14 +21,29 @@
         <p>Turn: Left/Right or A/D</p>
         <p>Thrust: Up or W</p>
         <p>Shoot: Space</p>
-        <p class="hint">Press Enter to start or restart</p>
+        <p>Mobile: Use on-screen controls</p>
+        <p class="hint">Press Enter or tap Start</p>
+        <button class="menu-btn" id="start-btn" type="button">Start</button>
       </section>
 
       <section class="overlay hidden" id="overlay">
         <h2 id="overlay-title">Game Over</h2>
         <p id="overlay-text"></p>
-        <p class="hint">Press Enter to play again</p>
+        <p class="hint">Press Enter or tap Restart</p>
+        <button class="menu-btn" id="restart-btn" type="button">Restart</button>
       </section>
+
+      <div class="touch-controls" id="touch-controls" aria-label="Touch controls">
+        <div class="touch-move">
+          <button class="touch-btn" id="btn-left" type="button" aria-label="Turn left">Left</button>
+          <button class="touch-btn" id="btn-thrust" type="button" aria-label="Thrust">Thrust</button>
+          <button class="touch-btn" id="btn-right" type="button" aria-label="Turn right">Right</button>
+        </div>
+        <div class="touch-actions">
+          <button class="touch-btn touch-auto" id="btn-autofire" type="button" aria-label="Toggle auto fire">Auto</button>
+          <button class="touch-btn touch-fire" id="btn-shoot" type="button" aria-label="Shoot">Fire</button>
+        </div>
+      </div>
     </main>
 
     <script src="game.js"></script>
