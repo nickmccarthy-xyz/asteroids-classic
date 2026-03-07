@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Classic Asteroids</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <header class="hud">
+        <div><span class="label">Score</span> <span id="score">0</span></div>
+        <div><span class="label">Lives</span> <span id="lives">3</span></div>
+        <div><span class="label">Level</span> <span id="level">1</span></div>
+      </header>
+
+      <canvas id="game" width="960" height="640" aria-label="Asteroids game canvas"></canvas>
+
+      <section class="help" id="help">
+        <h1>Classic Asteroids</h1>
+        <p>Turn: Left/Right or A/D</p>
+        <p>Thrust: Up or W</p>
+        <p>Shoot: Space</p>
+        <p class="hint">Press Enter to start or restart</p>
+      </section>
+
+      <section class="overlay hidden" id="overlay">
+        <h2 id="overlay-title">Game Over</h2>
+        <p id="overlay-text"></p>
+        <p class="hint">Press Enter to play again</p>
+      </section>
+    </main>
+
+    <script src="game.js"></script>
+  </body>
+</html>
