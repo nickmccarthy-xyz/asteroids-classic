@@ -333,7 +333,7 @@ function drawStars() {
 
 function getRenderScaleTarget() {
   const dpr = window.devicePixelRatio || 1;
-  const hasTouch = window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+  const hasTouch = hasTouchDevice();
   let maxScale = hasTouch ? 1.35 : 2;
   if (hasTouch && Math.min(window.innerWidth, window.innerHeight) < 430) {
     maxScale = 1.1;
@@ -411,52 +411,85 @@ function setAutoFire(isEnabled) {
   updateShootState();
 }
 
-function bindHoldControl(btnEl, key) {
+function hasTouchDevice() {
+  const coarsePointer = typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
+  return Boolean(coarsePointer || navigator.maxTouchPoints > 0 || "ontouchstart" in window);
+}
+
+function bindPressHandlers(btnEl, onStart, onEnd) {
   if (!btnEl) return;
 
-  const onDown = (e) => {
-    setControlState(key, true, btnEl);
-    if (e.pointerId !== undefined) btnEl.setPointerCapture(e.pointerId);
-    e.preventDefault();
-  };
+  if (window.PointerEvent) {
+    btnEl.addEventListener("pointerdown", (e) => {
+      onStart();
+      e.preventDefault();
+    });
+    btnEl.addEventListener("pointerup", (e) => {
+      onEnd();
+      e.preventDefault();
+    });
+    btnEl.addEventListener("pointercancel", (e) => {
+      onEnd();
+      e.preventDefault();
+    });
+    btnEl.addEventListener("lostpointercapture", () => {
+      onEnd();
+    });
+  } else {
+    btnEl.addEventListener("touchstart", (e) => {
+      onStart();
+      e.preventDefault();
+    });
+    btnEl.addEventListener("touchend", (e) => {
+      onEnd();
+      e.preventDefault();
+    });
+    btnEl.addEventListener("touchcancel", (e) => {
+      onEnd();
+      e.preventDefault();
+    });
+    btnEl.addEventListener("mousedown", (e) => {
+      onStart();
+      e.preventDefault();
+    });
+    btnEl.addEventListener("mouseup", (e) => {
+      onEnd();
+      e.preventDefault();
+    });
+    btnEl.addEventListener("mouseleave", () => {
+      onEnd();
+    });
+  }
 
-  const onUp = (e) => {
-    setControlState(key, false, btnEl);
-    e.preventDefault();
-  };
-
-  btnEl.addEventListener("pointerdown", onDown);
-  btnEl.addEventListener("pointerup", onUp);
-  btnEl.addEventListener("pointercancel", onUp);
-  btnEl.addEventListener("lostpointercapture", onUp);
   btnEl.addEventListener("contextmenu", (e) => e.preventDefault());
+}
+
+function bindHoldControl(btnEl, key) {
+  if (!btnEl) return;
+  bindPressHandlers(
+    btnEl,
+    () => setControlState(key, true, btnEl),
+    () => setControlState(key, false, btnEl),
+  );
 }
 
 function bindShootControl(btnEl) {
   if (!btnEl) return;
-
-  const onDown = (e) => {
-    shootHeld = true;
-    if (e.pointerId !== undefined) btnEl.setPointerCapture(e.pointerId);
-    updateShootState();
-    e.preventDefault();
-  };
-
-  const onUp = (e) => {
-    shootHeld = false;
-    updateShootState();
-    e.preventDefault();
-  };
-
-  btnEl.addEventListener("pointerdown", onDown);
-  btnEl.addEventListener("pointerup", onUp);
-  btnEl.addEventListener("pointercancel", onUp);
-  btnEl.addEventListener("lostpointercapture", onUp);
-  btnEl.addEventListener("contextmenu", (e) => e.preventDefault());
+  bindPressHandlers(
+    btnEl,
+    () => {
+      shootHeld = true;
+      updateShootState();
+    },
+    () => {
+      shootHeld = false;
+      updateShootState();
+    },
+  );
 }
 
 function enableTouchUiIfAvailable() {
-  if (window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0) {
+  if (hasTouchDevice()) {
     gameShellEl.classList.add("show-touch");
   }
 }
