@@ -509,16 +509,56 @@ if (autoFireBtnEl) {
 }
 
 if (startBtnEl) {
-  startBtnEl.addEventListener("click", () => {
+  startBtnEl.addEventListener("click", (e) => {
+    e.preventDefault();
     if (!gameStarted || gameOver) startNewRun();
   });
+  startBtnEl.addEventListener(
+    "touchend",
+    (e) => {
+      e.preventDefault();
+      if (!gameStarted || gameOver) startNewRun();
+    },
+    { passive: false },
+  );
 }
 
 if (restartBtnEl) {
-  restartBtnEl.addEventListener("click", () => {
+  restartBtnEl.addEventListener("click", (e) => {
+    e.preventDefault();
     if (!gameStarted || gameOver) startNewRun();
   });
+  restartBtnEl.addEventListener(
+    "touchend",
+    (e) => {
+      e.preventDefault();
+      if (!gameStarted || gameOver) startNewRun();
+    },
+    { passive: false },
+  );
 }
+
+helpEl.addEventListener(
+  "touchend",
+  (e) => {
+    if (!gameStarted || gameOver) {
+      e.preventDefault();
+      startNewRun();
+    }
+  },
+  { passive: false },
+);
+
+overlayEl.addEventListener(
+  "touchend",
+  (e) => {
+    if (!gameStarted || gameOver) {
+      e.preventDefault();
+      startNewRun();
+    }
+  },
+  { passive: false },
+);
 
 window.addEventListener("keydown", (e) => {
   const k = e.key.toLowerCase();
