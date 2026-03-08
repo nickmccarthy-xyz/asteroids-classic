@@ -175,6 +175,11 @@ p {
   display: flex;
 }
 
+.help:not(.hidden) ~ .touch-controls,
+.overlay:not(.hidden) ~ .touch-controls {
+  display: none;
+}
+
 @media (max-width: 720px) {
   .hud {
     font-size: 0.85rem;
